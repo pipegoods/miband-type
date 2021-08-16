@@ -30,6 +30,15 @@ function App() {
     setauthKey(event.target.value);
   };
 
+  const calcularModa = (arr : RegistroType[]) => {
+    return arr
+      .sort(
+        (a, b) =>
+          arr.filter((v) => v.rr === a.rr).length - arr.filter((v) => v.rr === b.rr).length
+      )
+      .pop();
+  };
+
   const conectar = async () => {
     console.log("Estoy conectando!!");
 
@@ -70,7 +79,7 @@ function App() {
     try {
       firebase.db
         .collection("registroRR")
-        .orderBy("createdAt")
+        .orderBy("rr")
         .onSnapshot((querySnapshot) => {
           setregistro([]);
           querySnapshot.docs.forEach((doc) => {
@@ -78,9 +87,16 @@ function App() {
             setregistro((old) => [...old, { bpm, rr, id: doc.id, createdAt }]);
           });
         });
+
+        console.log(calcularModa(registro)?.rr);
+        console.log(`numero de registros: ${registro.length}`);
+        
+        
     } catch (error) {
       console.log(error);
     }
+
+
   }, []);
 
   return (
