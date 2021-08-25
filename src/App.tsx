@@ -1,5 +1,5 @@
 import React, { useState, ChangeEvent, useEffect } from "react";
-import { Button, Divider, Typography, TextField, FormControl, InputLabel, Select, MenuItem, SelectChangeEvent } from "@material-ui/core";
+import { Button, Divider, Typography, TextField } from "@material-ui/core";
 import MiBand5 from "./lib/miband";
 import firebase from "./config/firebase";
 
@@ -47,24 +47,6 @@ function App() {
           arr.filter((v) => v.rr === b.rr).length
       )
       .pop();
-  };
-
-  const handleChangeSelect = (event: SelectChangeEvent<{ value: string }>) => {
-    setRegistroSelect(event.target.value.toString());
-
-    try {
-      console.log("ENTREEEE");
-      
-      firebase.db.collection("registrosRR").doc(event.target.value.toString()).collection("registro").onSnapshot((querySnapshot) => {
-        setregistro([]);
-        querySnapshot.docs.forEach((doc) => {
-          const { bpm, rr, createdAt } = doc.data();
-          setregistro((old) => [...old, { bpm, rr, id: doc.id, createdAt }]);
-        });
-      });
-    } catch (error) {
-      
-    }
   };
 
   const conectar = async () => {
@@ -137,6 +119,20 @@ function App() {
       console.log(error);
     }
 
+
+    try {
+      console.log("ENTREEEE");
+      
+      firebase.db.collection("registrosRR").doc("").collection("registro").onSnapshot((querySnapshot) => {
+        setregistro([]);
+        querySnapshot.docs.forEach((doc) => {
+          const { bpm, rr, createdAt } = doc.data();
+          setregistro((old) => [...old, { bpm, rr, id: doc.id, createdAt }]);
+        });
+      });
+    } catch (error) {
+      
+    }
   }, []);
 
   const modaaaa = () => {
@@ -176,30 +172,12 @@ function App() {
         </Button>
       )}
       <br />
-      <Button onClick={modaaaa} variant="contained" color="success">
+      <Button onClick={modaaaa} variant="contained" color="primary">
         moda
       </Button>
       <br />
 
       <Divider />
-      <FormControl fullWidth>
-        <InputLabel id="demo-simple-select-label">Escoge el registro</InputLabel>
-        <Select
-          labelId="demo-simple-select-label"
-          id="demo-simple-select"
-          value={{value: registroSelect}}
-          label="Age"
-          onChange={handleChangeSelect}
-        >
-          {
-            listRegistros.map(r => {
-              return (
-                <MenuItem value={r}>{r}</MenuItem>
-              )
-            })
-          }
-        </Select>
-      </FormControl>
       <br />
       <br />
       <ul>
