@@ -1,5 +1,5 @@
 import React, { useState, ChangeEvent, useEffect } from "react";
-import { Button, Divider, Typography, TextField } from "@material-ui/core";
+import { Button, Divider, Typography, TextField, FormControl, InputLabel, Select, MenuItem } from "@material-ui/core";
 import MiBand5 from "./lib/miband";
 import firebase from "./config/firebase";
 
@@ -39,7 +39,33 @@ function App() {
     setnombreActividad(event.target.value);
   };
 
-  const calcularModa = (arr: RegistroType[]) => {
+  const handleChangeSelect = (event: React.ChangeEvent<{ value: unknown }>) => {
+    setRegistroSelect(event.target.value as string);
+  };
+
+  const obteneRegistros = () => {
+    try {
+      console.log("ENTREEEE");
+
+      firebase.db
+        .collection("registroRR")
+        .doc(registroSelect)
+        .collection("registro")
+        .orderBy('createdAt')
+        .onSnapshot((querySnapshot) => {
+          setregistro([]);
+          querySnapshot.docs.forEach((doc) => {
+            const { bpm, rr, createdAt } = doc.data();
+            setregistro((old) => [...old, { bpm, rr, id: doc.id, createdAt }]);
+            console.log(doc.data());
+            
+          });
+        });
+    } catch (error) {}
+  }
+
+  const calcularModa = (arrProps: RegistroType[]) => {
+    const arr = arrProps.slice();
     return arr
       .sort(
         (a, b) =>
@@ -104,40 +130,55 @@ function App() {
 
   useEffect(() => {
     try {
-      firebase.db
-        .collection("registroRR")
-        .onSnapshot((querySnapshot) => {
-          setregistro([]);
-          querySnapshot.docs.forEach((doc) => {
-            // const { bpm, rr, createdAt } = doc.data();
-            // setregistro((old) => [...old, { bpm, rr, id: doc.id, createdAt }]);
-            console.log(doc.data());
-            setlistRegistros((old) => [...old, doc.id])
-          });
-        });
-    } catch (error) {
-      console.log(error);
-    }
-
-
-    try {
-      console.log("ENTREEEE");
-      
-      firebase.db.collection("registrosRR").doc("").collection("registro").onSnapshot((querySnapshot) => {
-        setregistro([]);
+      setlistRegistros([]);
+      firebase.db.collection("registroRR").onSnapshot((querySnapshot) => {
         querySnapshot.docs.forEach((doc) => {
-          const { bpm, rr, createdAt } = doc.data();
-          setregistro((old) => [...old, { bpm, rr, id: doc.id, createdAt }]);
+
+          // const { bpm, rr, createdAt } = doc.data();
+          // setregistro((old) => [...old, { bpm, rr, id: doc.id, createdAt }]);
+          console.log(doc.data());
+          setlistRegistros((old) => [...old, doc.id]);
         });
       });
     } catch (error) {
-      
+      console.log(error);
     }
   }, []);
 
+  const arrayMin = (arrProps : RegistroType[]) => {
+    const arr = arrProps.slice();
+    return arr.reduce(function (p, v) {
+      return ( p.rr < v.rr ? p : v );
+    });
+  }
+  
+  const arrayMax = (arrProps : RegistroType[]) => {
+    const arr = arrProps.slice();
+    return arr.reduce(function (p, v) {
+      return ( p.rr > v.rr ? p : v );
+    });
+  }
+
   const modaaaa = () => {
     console.log(calcularModa(registro)?.rr);
+    const moda = calcularModa(registro)?.rr ? calcularModa(registro)?.rr : 0;
     console.log(`numero de registros: ${registro.length}`);
+    console.log("MAX: ", arrayMax(registro).rr);
+    console.log("MIN: ", arrayMin(registro).rr);
+    
+    if (moda) {
+      
+      const porModa = (registro.filter(r => r.rr === calcularModa(registro)?.rr).length / registro.length)*100;
+      const maxArrayRR = arrayMax(registro).rr / 1000;
+      const minArrayRR = arrayMin(registro).rr / 1000;
+
+      console.log("%moda: ", porModa);
+      console.log("2M: ", (2*moda/1000));
+      console.log("RRMax - RRMin: ", (maxArrayRR - minArrayRR));
+      
+      const idm = (porModa) / ((2*moda/1000) * (maxArrayRR - minArrayRR));
+      console.log("Indice de estres mental: ", idm);
+    }
   };
 
   return (
@@ -179,13 +220,34 @@ function App() {
 
       <Divider />
       <br />
+      <Button onClick={obteneRegistros} variant="outlined" color="secondary">
+        Obtener!!
+      </Button>
+
+      <FormControl>
+        <InputLabel id="demo-simple-select-label">Registro!</InputLabel>
+        <Select
+          labelId="demo-simple-select-label"
+          id="demo-simple-select"
+          value={registroSelect}
+          onChange={handleChangeSelect}
+        >
+          {
+            listRegistros.map(r => {
+              return (
+                <MenuItem key={r} value={r}>{r}</MenuItem>
+              )
+            })
+          }
+        </Select>
+      </FormControl>
       <br />
       <ul>
         {registro.map((r) => {
           return (
             <li key={r.id}>{`BPM: ${r.bpm}, RR: ${
               r.rr
-            }, fehca: ${r.createdAt.toDate()}`}</li>
+            }, fecha: ${r.createdAt.toDate()}`}</li>
           );
         })}
       </ul>
