@@ -1,13 +1,32 @@
 import React, { useState, ChangeEvent, useEffect } from "react";
-import { Button, Divider, Typography, TextField, FormControl, InputLabel, Select, MenuItem } from "@material-ui/core";
+import {
+  Button,
+  Divider,
+  Typography,
+  TextField,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Grid,
+} from "@material-ui/core";
 import MiBand5 from "./lib/miband";
 import firebase from "./config/firebase";
+import ChartsComponent from "./ChartsComponent";
+import firebaseapp from "firebase";
 
 interface RegistroType {
   rr: number;
   bpm: number;
   id: string;
-  createdAt: any;
+  createdAt: firebaseapp.firestore.Timestamp;
+}
+
+export interface RegistroTypeString {
+  rr: number;
+  bpm: number;
+  id: string;
+  createdAt: string;
 }
 
 declare global {
@@ -51,18 +70,17 @@ function App() {
         .collection("registroRR")
         .doc(registroSelect)
         .collection("registro")
-        .orderBy('createdAt')
+        .orderBy("createdAt")
         .onSnapshot((querySnapshot) => {
           setregistro([]);
           querySnapshot.docs.forEach((doc) => {
             const { bpm, rr, createdAt } = doc.data();
             setregistro((old) => [...old, { bpm, rr, id: doc.id, createdAt }]);
             console.log(doc.data());
-            
           });
         });
     } catch (error) {}
-  }
+  };
 
   const calcularModa = (arrProps: RegistroType[]) => {
     const arr = arrProps.slice();
@@ -133,7 +151,6 @@ function App() {
       setlistRegistros([]);
       firebase.db.collection("registroRR").onSnapshot((querySnapshot) => {
         querySnapshot.docs.forEach((doc) => {
-
           // const { bpm, rr, createdAt } = doc.data();
           // setregistro((old) => [...old, { bpm, rr, id: doc.id, createdAt }]);
           console.log(doc.data());
@@ -145,19 +162,35 @@ function App() {
     }
   }, []);
 
-  const arrayMin = (arrProps : RegistroType[]) => {
+  const arrayMin = (arrProps: RegistroType[]) => {
     const arr = arrProps.slice();
     return arr.reduce(function (p, v) {
-      return ( p.rr < v.rr ? p : v );
+      return p.rr < v.rr ? p : v;
     });
-  }
-  
-  const arrayMax = (arrProps : RegistroType[]) => {
+  };
+
+  const arrayMax = (arrProps: RegistroType[]) => {
     const arr = arrProps.slice();
     return arr.reduce(function (p, v) {
-      return ( p.rr > v.rr ? p : v );
+      return p.rr > v.rr ? p : v;
     });
-  }
+  };
+
+  const timestamptodate = (arrProps: RegistroType[]) => {
+    const arr = arrProps.slice();
+    const arrReturn : RegistroTypeString[] = [];
+    arr.forEach(a => {
+      const date: Date = a.createdAt.toDate();
+      
+      // Minutes
+      var minutes = "0" + date.getMinutes();
+
+      // Seconds
+      var seconds = "0" + date.getSeconds();
+      arrReturn.push({rr: a.rr, bpm: a.bpm, id: a.id, createdAt: minutes.substr(-2) + ':' + seconds.substr(-2)});
+    });
+    return arrReturn;
+  };
 
   const modaaaa = () => {
     console.log(calcularModa(registro)?.rr);
@@ -165,18 +198,18 @@ function App() {
     console.log(`numero de registros: ${registro.length}`);
     console.log("MAX: ", arrayMax(registro).rr);
     console.log("MIN: ", arrayMin(registro).rr);
-    
+
     if (moda) {
-      
-      const porModa = (registro.filter(r => r.rr === calcularModa(registro)?.rr).length / registro.length)*100;
+      const porModa =
+        (registro.filter((r) => r.rr === moda).length / registro.length) * 100;
       const maxArrayRR = arrayMax(registro).rr / 1000;
       const minArrayRR = arrayMin(registro).rr / 1000;
 
       console.log("%moda: ", porModa);
-      console.log("2M: ", (2*moda/1000));
-      console.log("RRMax - RRMin: ", (maxArrayRR - minArrayRR));
-      
-      const idm = (porModa) / ((2*moda/1000) * (maxArrayRR - minArrayRR));
+      console.log("2M: ", (2 * moda) / 1000);
+      console.log("RRMax - RRMin: ", maxArrayRR - minArrayRR);
+
+      const idm = porModa / (((2 * moda) / 1000) * (maxArrayRR - minArrayRR));
       console.log("Indice de estres mental: ", idm);
     }
   };
@@ -232,22 +265,55 @@ function App() {
           value={registroSelect}
           onChange={handleChangeSelect}
         >
-          {
-            listRegistros.map(r => {
-              return (
-                <MenuItem key={r} value={r}>{r}</MenuItem>
-              )
-            })
-          }
+          {listRegistros.map((r) => {
+            return (
+              <MenuItem key={r} value={r}>
+                {r}
+              </MenuItem>
+            );
+          })}
         </Select>
       </FormControl>
+
+      <Grid
+        container
+        spacing={1}
+        direction="row"
+        justify="center"
+        alignItems="center"
+        alignContent="center"
+        wrap="nowrap"
+      >
+        <Grid item xs={6}>
+          <ChartsComponent
+            datos={timestamptodate(registro)}
+            argumentField="createdAt"
+            valueField="rr"
+          />
+        </Grid>
+        <Grid item xs={6}>
+          <ChartsComponent
+            datos={timestamptodate(registro)}
+            argumentField="createdAt"
+            valueField="bpm"
+          />
+        </Grid>
+      </Grid>
       <br />
+
+      <Button
+        onClick={() => console.log(timestamptodate(registro))}
+        variant="text"
+        color="default"
+      >
+        asdasdasdd
+      </Button>
       <ul>
         {registro.map((r) => {
           return (
             <li key={r.id}>{`BPM: ${r.bpm}, RR: ${
               r.rr
-            }, fecha: ${r.createdAt.toDate()}`}</li>
+            }`}</li>
           );
         })}
       </ul>
