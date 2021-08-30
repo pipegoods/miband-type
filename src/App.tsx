@@ -14,6 +14,7 @@ import MiBand5 from "./lib/miband";
 import firebase from "./config/firebase";
 import ChartsComponent from "./ChartsComponent";
 import firebaseapp from "firebase";
+import * as MathJS from 'mathjs'
 
 interface RegistroType {
   rr: number;
@@ -83,14 +84,7 @@ function App() {
   };
 
   const calcularModa = (arrProps: RegistroType[]) => {
-    const arr = arrProps.slice();
-    return arr
-      .sort(
-        (a, b) =>
-          arr.filter((v) => v.rr === a.rr).length -
-          arr.filter((v) => v.rr === b.rr).length
-      )
-      .pop();
+    return MathJS.mode(listadoRR(arrProps));
   };
 
   const conectar = async () => {
@@ -117,7 +111,7 @@ function App() {
         .doc(doc_id)
         .collection("registro")
         .add({
-          rr: 60000 / e.detail,
+          rr: Math.trunc(60000 / e.detail),
           bpm: e.detail,
           createdAt: firebase.firebase.firestore.FieldValue.serverTimestamp(),
         });
@@ -162,48 +156,52 @@ function App() {
     }
   }, []);
 
-  const arrayMin = (arrProps: RegistroType[]) => {
+  const listadoRR = (arrProps: RegistroType[]) => {
     const arr = arrProps.slice();
-    return arr.reduce(function (p, v) {
-      return p.rr < v.rr ? p : v;
-    });
+    return arr.map(a => a.rr);
+  };
+
+  const arrayMin = (arrProps: RegistroType[]) => {
+    return Math.min.apply(Math,listadoRR(arrProps));
   };
 
   const arrayMax = (arrProps: RegistroType[]) => {
-    const arr = arrProps.slice();
-    return arr.reduce(function (p, v) {
-      return p.rr > v.rr ? p : v;
-    });
+    return Math.max.apply(Math, listadoRR(arrProps));
   };
 
   const timestamptodate = (arrProps: RegistroType[]) => {
     const arr = arrProps.slice();
-    const arrReturn : RegistroTypeString[] = [];
-    arr.forEach(a => {
-      const date: Date = a.createdAt.toDate();
-      
+    const arrReturn: RegistroTypeString[] = [];
+    arr.forEach((a) => {
+      const date = a.createdAt.toDate();
+
       // Minutes
       var minutes = "0" + date.getMinutes();
 
       // Seconds
       var seconds = "0" + date.getSeconds();
-      arrReturn.push({rr: a.rr, bpm: a.bpm, id: a.id, createdAt: minutes.substr(-2) + ':' + seconds.substr(-2)});
+      arrReturn.push({
+        rr: a.rr,
+        bpm: a.bpm,
+        id: a.id,
+        createdAt: minutes.substr(-2) + ":" + seconds.substr(-2),
+      });
     });
     return arrReturn;
   };
 
   const modaaaa = () => {
-    console.log(calcularModa(registro)?.rr);
-    const moda = calcularModa(registro)?.rr ? calcularModa(registro)?.rr : 0;
+    console.log(calcularModa(registro)[0]);
+    const moda = calcularModa(registro)[0];
     console.log(`numero de registros: ${registro.length}`);
-    console.log("MAX: ", arrayMax(registro).rr);
-    console.log("MIN: ", arrayMin(registro).rr);
+    console.log("MAX: ", arrayMax(registro));
+    console.log("MIN: ", arrayMin(registro));
 
     if (moda) {
       const porModa =
         (registro.filter((r) => r.rr === moda).length / registro.length) * 100;
-      const maxArrayRR = arrayMax(registro).rr / 1000;
-      const minArrayRR = arrayMin(registro).rr / 1000;
+      const maxArrayRR = arrayMax(registro) / 1000;
+      const minArrayRR = arrayMin(registro) / 1000;
 
       console.log("%moda: ", porModa);
       console.log("2M: ", (2 * moda) / 1000);
@@ -211,6 +209,7 @@ function App() {
 
       const idm = porModa / (((2 * moda) / 1000) * (maxArrayRR - minArrayRR));
       console.log("Indice de estres mental: ", idm);
+      alert(`El indice de estres es: ${idm}`);
     }
   };
 
@@ -247,7 +246,7 @@ function App() {
       )}
       <br />
       <Button onClick={modaaaa} variant="contained" color="primary">
-        moda
+        CALCULAR IEM
       </Button>
       <br />
 
@@ -275,46 +274,39 @@ function App() {
         </Select>
       </FormControl>
 
-      <Grid
-        container
-        spacing={1}
-        direction="row"
-        justify="center"
-        alignItems="center"
-        alignContent="center"
-        wrap="nowrap"
-      >
-        <Grid item xs={6}>
-          <ChartsComponent
-            datos={timestamptodate(registro)}
-            argumentField="createdAt"
-            valueField="rr"
-          />
+      {registro.length ? (
+        <Grid
+          container
+          spacing={1}
+          direction="row"
+          justify="center"
+          alignItems="center"
+          alignContent="center"
+          wrap="nowrap"
+        >
+          <Grid item xs={6}>
+            <ChartsComponent
+              datos={timestamptodate(registro)}
+              argumentField="createdAt"
+              valueField="rr"
+              name="Registro RR"
+            />
+          </Grid>
+          <Grid item xs={6}>
+            <ChartsComponent
+              datos={timestamptodate(registro)}
+              argumentField="createdAt"
+              valueField="bpm"
+              name="Registro BPM"
+            />
+          </Grid>
         </Grid>
-        <Grid item xs={6}>
-          <ChartsComponent
-            datos={timestamptodate(registro)}
-            argumentField="createdAt"
-            valueField="bpm"
-          />
-        </Grid>
-      </Grid>
+      ) : null}
       <br />
 
-      <Button
-        onClick={() => console.log(timestamptodate(registro))}
-        variant="text"
-        color="default"
-      >
-        asdasdasdd
-      </Button>
       <ul>
         {registro.map((r) => {
-          return (
-            <li key={r.id}>{`BPM: ${r.bpm}, RR: ${
-              r.rr
-            }`}</li>
-          );
+          return <li key={r.id}>{`BPM: ${r.bpm}, RR: ${r.rr}, Fecha: ${r.createdAt.toDate().getUTCMinutes()}`}</li>;
         })}
       </ul>
     </div>

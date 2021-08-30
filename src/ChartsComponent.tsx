@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   ArgumentAxis,
   ValueAxis,
@@ -6,30 +6,37 @@ import {
   LineSeries,
   Tooltip,
   ZoomAndPan,
-  Legend
+  Legend,
 } from "@devexpress/dx-react-chart-material-ui";
 import { Paper } from "@material-ui/core";
 import { RegistroTypeString } from "./App";
-import { EventTracker } from "@devexpress/dx-react-chart";
+import { EventTracker, Viewport } from "@devexpress/dx-react-chart";
+
 interface Props {
   datos: RegistroTypeString[];
   valueField: string;
   argumentField: string;
+  name: string;
 }
 
-const ChartsComponent = ({ datos, valueField, argumentField }: Props) => {
+const ChartsComponent = ({ datos, valueField, argumentField, name }: Props) => {
+  const [viewport, viewportChange] = useState<Viewport>()
   return (
     <Paper>
       <Chart data={datos}>
-        <ArgumentAxis  />
+        <ArgumentAxis showLabels={false} />
         <ValueAxis />
 
-        <LineSeries name="Registro RR" color="red" valueField={valueField} argumentField={argumentField} />
+        <LineSeries
+          name={name}
+          color="red"
+          valueField={valueField}
+          argumentField={argumentField}
+        />
         <EventTracker />
         <Tooltip />
-        <ZoomAndPan />
-        <Legend position="bottom"  />
-        
+        <ZoomAndPan viewport={viewport} onViewportChange={viewportChange} />
+        <Legend position="bottom" />
       </Chart>
     </Paper>
   );
