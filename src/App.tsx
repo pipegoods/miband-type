@@ -14,7 +14,8 @@ import MiBand5 from "./lib/miband";
 import firebase from "./config/firebase";
 import ChartsComponent from "./ChartsComponent";
 import firebaseapp from "firebase";
-import * as MathJS from 'mathjs'
+import * as MathJS from "mathjs";
+import ChartsComponentIDM from "./ChartsComponentIDM";
 
 interface RegistroType {
   rr: number;
@@ -36,8 +37,26 @@ declare global {
   }
 }
 
+export interface RegistroIntervalo {
+  listaRR: number[];
+  idm: number;
+  is: number;
+  hora: string;
+}
+
 function App() {
+  const initResgistroInter: RegistroIntervalo[] = [
+    {
+      idm: 0,
+      is: 0,
+      listaRR: [],
+      hora: "Hora"
+    },
+  ];
+
   const [registro, setregistro] = useState<RegistroType[]>([]);
+  const [registroIntervalo, setregistroIntervalo] =
+    useState<RegistroIntervalo[]>(initResgistroInter);
   const [listRegistros, setlistRegistros] = useState<string[]>([]);
   const [registroSelect, setRegistroSelect] = useState<string>("");
   const [bpm, setBpm] = useState<number>(0);
@@ -77,14 +96,18 @@ function App() {
           querySnapshot.docs.forEach((doc) => {
             const { bpm, rr, createdAt } = doc.data();
             setregistro((old) => [...old, { bpm, rr, id: doc.id, createdAt }]);
-            console.log(doc.data());
           });
         });
+      setregistroIntervalo(calcularIDM(separarIntervalos(registro)));
     } catch (error) {}
   };
 
   const calcularModa = (arrProps: RegistroType[]) => {
     return MathJS.mode(listadoRR(arrProps));
+  };
+
+  const calcularModaRR = (arrProps: number[]) => {
+    return MathJS.mode(arrProps);
   };
 
   const conectar = async () => {
@@ -124,7 +147,7 @@ function App() {
       window.miband = new MiBand5(authKey);
       await window.miband.init();
       setstateMiband(true);
-    } catch (e) {
+    } catch (e: any) {
       alert(e.message);
     }
   };
@@ -135,7 +158,7 @@ function App() {
     try {
       await window.miband?.onDisconnectButtonClick();
       setstateMiband(false);
-    } catch (e) {
+    } catch (e: any) {
       alert(e.message);
     }
   };
@@ -158,15 +181,23 @@ function App() {
 
   const listadoRR = (arrProps: RegistroType[]) => {
     const arr = arrProps.slice();
-    return arr.map(a => a.rr);
+    return arr.map((a) => a.rr);
   };
 
   const arrayMin = (arrProps: RegistroType[]) => {
-    return Math.min.apply(Math,listadoRR(arrProps));
+    return Math.min.apply(Math, listadoRR(arrProps));
+  };
+
+  const arrayMinRR = (arrProps: number[]) => {
+    return Math.min.apply(Math, arrProps);
   };
 
   const arrayMax = (arrProps: RegistroType[]) => {
     return Math.max.apply(Math, listadoRR(arrProps));
+  };
+
+  const arrayMaxRR = (arrProps: number[]) => {
+    return Math.max.apply(Math, arrProps);
   };
 
   const timestamptodate = (arrProps: RegistroType[]) => {
@@ -211,6 +242,66 @@ function App() {
       console.log("Indice de estres mental: ", idm);
       alert(`El indice de estres es: ${idm}`);
     }
+
+    console.log(calcularIDM(separarIntervalos(registro)));
+    setregistroIntervalo(calcularIDM(separarIntervalos(registro)));
+  };
+
+  const agregaMinutos = (dt: Date, minutos: number) => {
+    return new Date(dt.getTime() + minutos * 60000);
+  };
+
+  const separarIntervalos = (arrProps: RegistroType[]) => {
+    const arr = arrProps.slice();
+    const arrReturn: RegistroIntervalo[] = [];
+    let ultimoDate: Date = agregaMinutos(arr[0].createdAt.toDate(), 1);
+    let arrRR: number[] = [];
+    let bandera: boolean = false;
+    arr.forEach((registro) => {
+      if (registro.createdAt.toDate() <= ultimoDate) {
+        arrRR.push(registro.rr);
+      } else {
+        bandera = true;
+        arrReturn.push({ idm: 0, listaRR: arrRR, hora: registro.createdAt.toDate().getHours() + ":" + registro.createdAt.toDate().getMinutes() + ":" + registro.createdAt.toDate().getSeconds(), is: 0 });
+        arrRR = [];
+        ultimoDate = agregaMinutos(registro.createdAt.toDate(), 1);
+      }
+    });
+
+    if (!bandera) {
+      arrReturn.push({ idm: 0, listaRR: arrRR, hora: registro[0].createdAt.toDate().toString(), is: 0 });
+    }
+
+    return arrReturn;
+  };
+
+  const calcularIDM = (arrProps: RegistroIntervalo[]) => {
+    const arr = arrProps.slice();
+    let moda: number;
+    let min;
+    let max;
+    let porModa;
+    arr.forEach((registro) => {
+      if (registro.listaRR.length > 0) {
+        moda = calcularModaRR(registro.listaRR)[0];
+        min = arrayMinRR(registro.listaRR) / 1000;
+        max = arrayMaxRR(registro.listaRR) / 1000;
+        porModa =
+          (registro.listaRR.filter((r) => r === moda).length /
+            registro.listaRR.length) *
+          100;
+        registro.idm = porModa / (((2 * moda) / 1000) * (max - min));
+        if (registro.idm < 40) {
+          registro.is = 1 // Relajado
+        } else if (registro.idm >= 40 && registro.idm < 150) {
+          registro.is = 2 // Normal
+        } else {
+          registro.is = 3 // Estresado
+        }
+      }
+    });
+
+    return arr;
   };
 
   return (
@@ -300,13 +391,34 @@ function App() {
               name="Registro BPM"
             />
           </Grid>
+          <Grid item xs={12}>
+            <ChartsComponentIDM
+              datos={registroIntervalo}
+              argumentField="hora"
+              valueField="idm"
+              name="IDM Cada 2 Minutos"
+            />
+          </Grid>
+          <Grid item xs={12}>
+            <ChartsComponent
+              datos={registroIntervalo}
+              argumentField="hora"
+              valueField="is"
+              name="Indice, 1: Relajado, 2: Normal, 3: Estresado"
+            />
+          </Grid>
         </Grid>
       ) : null}
       <br />
 
       <ul>
         {registro.map((r) => {
-          return <li key={r.id}>{`BPM: ${r.bpm}, RR: ${r.rr}, Fecha: ${r.createdAt.toDate().getUTCMinutes()}`}</li>;
+          return (
+            <li key={r.id}>{`BPM: ${r.bpm}, RR: ${r.rr}, Fecha: ${agregaMinutos(
+              r.createdAt.toDate(),
+              1
+            ).toUTCString()}`}</li>
+          );
         })}
       </ul>
     </div>

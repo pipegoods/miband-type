@@ -1,45 +1,48 @@
-import React, { useState } from "react";
+import React from "react";
 import {
   ArgumentAxis,
   ValueAxis,
   Chart,
   LineSeries,
   Tooltip,
-  ZoomAndPan,
   Legend,
 } from "@devexpress/dx-react-chart-material-ui";
 import { Paper } from "@material-ui/core";
-import { RegistroIntervalo, RegistroTypeString } from "./App";
-import { EventTracker, Viewport } from "@devexpress/dx-react-chart";
+import { RegistroIntervalo } from "./App";
+import { EventTracker } from "@devexpress/dx-react-chart";
 
 interface Props {
-  datos: RegistroTypeString[] | RegistroIntervalo[];
+  datos: RegistroIntervalo[];
   valueField: string;
   argumentField: string;
   name: string;
 }
 
-const ChartsComponent = ({ datos, valueField, argumentField, name }: Props) => {
-  const [viewport, viewportChange] = useState<Viewport>()
+const ChartsComponentIDM = ({
+  datos,
+  valueField,
+  argumentField,
+  name,
+}: Props) => {
   return (
     <Paper>
       <Chart data={datos}>
-        <ArgumentAxis showLabels={false} />
+        <ArgumentAxis />
         <ValueAxis />
 
         <LineSeries
           name={name}
-          color="red"
           valueField={valueField}
           argumentField={argumentField}
+          color="#cd7f32"
         />
+
         <EventTracker />
         <Tooltip />
-        <ZoomAndPan viewport={viewport} onViewportChange={viewportChange} />
         <Legend position="bottom" />
       </Chart>
     </Paper>
   );
 };
 
-export default ChartsComponent;
+export default ChartsComponentIDM;
