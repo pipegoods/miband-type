@@ -1,53 +1,31 @@
 {
-  "name": "miband-type",
-  "version": "0.1.0",
+  "name": "hrv-estres",
+  "version": "2.0.0",
   "private": true,
-  "dependencies": {
-    "@devexpress/dx-react-chart": "^2.7.6",
-    "@devexpress/dx-react-chart-material-ui": "^2.7.6",
-    "@devexpress/dx-react-core": "^2.7.6",
-    "@material-ui/core": "^4.12.3",
-    "@testing-library/jest-dom": "^5.14.1",
-    "@testing-library/react": "^11.2.7",
-    "@testing-library/user-event": "^12.8.3",
-    "@types/jest": "^26.0.24",
-    "@types/node": "^12.20.20",
-    "@types/react": "^17.0.19",
-    "@types/react-dom": "^17.0.9",
-    "firebase": "^8.10.0",
-    "mathjs": "^9.4.4",
-    "react": "^17.0.2",
-    "react-dom": "^17.0.2",
-    "react-scripts": "4.0.3",
-    "typescript": "^4.3.5",
-    "web-bluetooth": "^0.1.2",
-    "web-vitals": "^1.1.2"
-  },
+  "type": "module",
+  "description": "Cálculo de la variabilidad cardíaca e índice de estrés (Baevsky) desde una pulsera o banda BLE",
   "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
-    "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit"
   },
-  "eslintConfig": {
-    "extends": [
-      "react-app",
-      "react-app/jest"
-    ]
-  },
-  "browserslist": {
-    "production": [
-      ">0.2%",
-      "not dead",
-      "not op_mini all"
-    ],
-    "development": [
-      "last 1 chrome version",
-      "last 1 firefox version",
-      "last 1 safari version"
-    ]
+  "dependencies": {
+    "dexie": "^4.4.7",
+    "dexie-react-hooks": "^4.4.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "recharts": "^3.10.1"
   },
   "devDependencies": {
-    "@types/web-bluetooth": "^0.0.11"
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@types/web-bluetooth": "^0.0.22",
+    "@vitejs/plugin-react": "^6.2.1",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.6",
+    "vitest": "^5.1.0"
   }
 }
